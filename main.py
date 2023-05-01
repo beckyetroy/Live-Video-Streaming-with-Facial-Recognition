@@ -19,17 +19,17 @@ becky_image = face_recognition.load_image_file("Becky/Becky.jpeg")
 becky_face_encoding = face_recognition.face_encodings(becky_image)[0]
 
 # Load a second sample picture and learn how to recognize it.
-bradley_image = face_recognition.load_image_file("Bradley/bradley.jpg")
-bradley_face_encoding = face_recognition.face_encodings(bradley_image)[0]
+adam_image = face_recognition.load_image_file("adam/adam.jpg")
+adam_face_encoding = face_recognition.face_encodings(adam_image)[0]
 
 # Create arrays of known face encodings and their names
 known_face_encodings = [
     becky_face_encoding,
-    bradley_face_encoding
+    adam_face_encoding
 ]
 known_face_names = [
     "Becky",
-    "Bradley"
+    "Adam"
 ]
 
 # Initialize some variables
