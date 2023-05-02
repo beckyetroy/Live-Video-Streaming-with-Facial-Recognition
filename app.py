@@ -1,9 +1,37 @@
+import subprocess
 from flask import Flask, render_template, Response
+from flask_socketio import SocketIO
 import cv2
 import face_recognition
 import numpy as np
+
+# Define the RTMP server URL
+rtmp_url = "rtmp://localhost:1935/live/stream"
 app=Flask(__name__)
+socketioApp = SocketIO(app)
 camera = cv2.VideoCapture(0)
+
+# Define the resolution of the video
+width = 640
+height = 480
+
+# Define the command to stream the video to the RTMP server using ffmpeg
+command = ['ffmpeg',
+           '-y',
+           '-f', 'rawvideo',
+           '-vcodec', 'rawvideo',
+           '-pix_fmt', 'bgr24',
+           '-s', "{}x{}".format(width, height),
+           '-i', '-',
+           '-c:v', 'libx264',
+           '-pix_fmt', 'yuv420p',
+           '-preset', 'ultrafast',
+           '-f', 'flv',
+           rtmp_url]
+
+# Start the subprocess with the command
+process = subprocess.Popen(command, stdin=subprocess.PIPE)
+
 # Load picture of person 1 and learn how to recognise it.
 becky_image = face_recognition.load_image_file("Becky/Becky.jpeg")
 becky_face_encoding = face_recognition.face_encodings(becky_image)[0]
@@ -90,9 +118,14 @@ def gen_frames():
                     cv2.putText(frame, name, name_pos, font, 1.0, white, 2)
                     if name != 'Unknown':
                         cv2.putText(frame, '100% Match', match_pos, font, 0.7, white, 2)
-
+                
+                # Write the frame to the stdin of the ffmpeg process
+                process.stdin.write(frame.tobytes())
+                # Encode the frame as JPEG
                 ret, buffer = cv2.imencode('.jpg', frame)
                 frame = buffer.tobytes()
+
+                # Yield the frame in byte format
                 yield (b'--frame\r\n'
                     b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
             process_this_frame = not process_this_frame
@@ -103,5 +136,6 @@ def index():
 @app.route('/video_feed')
 def video_feed():
     return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
-if __name__=='__main__':
-    app.run(debug=True)
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, threaded=True)
