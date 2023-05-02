@@ -31,11 +31,12 @@ known_face_names = [
 face_locations = []
 face_encodings = []
 face_names = []
-process_this_frame = True
 
 def gen_frames():  
     while True:
         success, frame = camera.read()  # read the camera frame
+        global process_this_frame
+        process_this_frame = True
         if not success:
             break
         else:
